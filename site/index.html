@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>n8n 实战课 13：一句话生成社媒三件套 + AI 配图</title>
+<style>
+  body{margin:0;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;background:#0d1b2a;color:#e0e6ed;line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:48px 24px}
+  .badge{display:inline-block;background:#1b3a5c;color:#7fd4ff;border:1px solid #2a5a8a;border-radius:20px;padding:4px 16px;font-size:14px}
+  h1{font-size:34px;margin:16px 0 8px;color:#fff}
+  h2{color:#7fd4ff;border-left:4px solid #7fd4ff;padding-left:12px;margin-top:40px}
+  .sub{color:#8fa8bf;font-size:17px}
+  .card{background:#12263a;border:1px solid #234a6d;border-radius:12px;padding:20px 24px;margin:16px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  .num{font-size:28px;color:#7fd4ff;font-weight:700}
+  code{background:#0a1522;padding:2px 8px;border-radius:6px;color:#ffd479}
+  a{color:#7fd4ff}
+  .flow{background:#0a1522;border-radius:12px;padding:20px;font-family:Consolas,monospace;font-size:14px;color:#a8d8a8;white-space:pre-wrap}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  td,th{border:1px solid #234a6d;padding:8px 12px;text-align:left}
+  th{background:#12263a;color:#7fd4ff}
+  .cta{display:inline-block;background:#ff6b35;color:#fff;border-radius:8px;padding:12px 28px;text-decoration:none;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">n8n 实战课 13 · 模板 19932</span>
+  <h1>一句话 → 社媒三件套 + AI 配图</h1>
+  <p class="sub">填一个表单，自动产出 Instagram / LinkedIn / X 三平台文案、AI 配图和精美结果页。官方模板 Groq+OpenAI+Google Drive，本课给你 <b>0 元中国可跑替代版</b>。</p>
+
+  <h2>它做什么</h2>
+  <div class="flow">表单提交（创意+尺寸）
+  → AI Agent 扩写生图提示词
+  → AI 生图 → 托管拿链接
+  → AI 写三平台文案
+  → AI 渲染精美 HTML 结果页</div>
+
+  <h2>三层验证 · 51 断言全绿</h2>
+  <div class="grid">
+    <div class="card"><div class="num">24/24</div>A 单元级：解析器 schema / 尺寸映射 / HTML 组装契约</div>
+    <div class="card"><div class="num">15/15</div>B mock 全链：保结构替换外部服务，验跨节点引用链</div>
+    <div class="card"><div class="num">12/12</div>C 真跑：DeepSeek×3 + Seedream 真生图，0 元</div>
+    <div class="card"><div class="num">9 个坑</div>全部实锤复现，含修复方案（键名漂移 / Drive 403 / XSS）</div>
+  </div>
+
+  <h2>你会学到</h2>
+  <table>
+    <tr><th>技能点</th><th>对应节点</th></tr>
+    <tr><td>表单触发 + 结果页回显</td><td><code>formTrigger</code> / <code>form</code></td></tr>
+    <tr><td>AI Agent 链式编排</td><td>3× <code>langchain.agent</code></td></tr>
+    <tr><td>结构化输出约束</td><td>3× <code>outputParserStructured</code></td></tr>
+    <tr><td>跨节点引用</td><td><code>$('节点').item.json</code> 跳级引用</td></tr>
+    <tr><td>LLM 工作流加固</td><td>docs/05 生产加固清单</td></tr>
+  </table>
+
+  <h2>免费替代</h2>
+  <div class="card">
+    Groq → <b>DeepSeek</b>（json_object 模式替代结构化解析器）<br>
+    OpenAI 生图 → <b>Seedream</b>（尺寸枚举 1:1 兼容）<br>
+    Google Drive → <b>本地/国内图床托管</b>（顺手修掉撞名 + 403 两个坑）
+  </div>
+
+  <p><a class="cta" href="https://github.com/xinchun575924529/n8n-lesson-13-ai-social-post-generator">📦 GitHub 领取课程包</a></p>
+  <p class="sub">回复暗号【社媒】获取配套答疑。课程含官方模板原样 + 免费替代版工作流 + 6 篇文档 + 3 道练习。</p>
+</div>
+</body>
+</html>
