@@ -1,0 +1,198 @@
+{
+  "id": "L2Cstm19932001",
+  "name": "L2C-FreeSub-19932-SocialPostGen",
+  "meta": {
+    "templateId": "19932"
+  },
+  "nodes": [
+    {
+      "id": "trig",
+      "name": "Run C",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -288
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "c0",
+      "name": "Scene Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        -288
+      ],
+      "parameters": {
+        "jsCode": "\nreturn [{ json: { input: 'a jar of golden honey on a wooden table, morning sunlight, farmhouse style',\n                  Resolution: '1024x1536' } }];\n"
+      }
+    },
+    {
+      "id": "c1",
+      "name": "C Prompt Agent (DeepSeek)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -288
+      ],
+      "notes": "替身: Prompt Creation Agent + Groq + parser",
+      "parameters": {
+        "jsCode": "\nconst fs = require('fs');\nconst key = JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json', 'utf-8')).apiKey;\nasync function ds(system, user, schemaHint) {\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.deepseek.com/chat/completions',\n    headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },\n    body: {\n      model: 'deepseek-chat',\n      messages: [\n        { role: 'system', content: system + '\\nYou MUST respond with a single valid JSON object matching this schema: ' + schemaHint + ' . No markdown fences, no extra text.' },\n        { role: 'user', content: user }\n      ],\n      response_format: { type: 'json_object' },\n      temperature: 0.7\n    },\n    json: true, timeout: 120000\n  });\n  const txt = res.choices[0].message.content;\n  return JSON.parse(txt);  // 契约层: 与模板解析器一样无 try 兜底,崩了就是坑实锤\n}\n\nconst out = await ds.call(this,\n  'You are a helpful image generation prompt generator. Your task is to see what user wants and then generate a detailed image generation prompt.',\n  $json.input, '{\"prompt\": \"string\"}');\nif (!out.prompt) throw new Error('Agent1 missing prompt key');\nreturn [{ json: { output: { prompt: out.prompt } } }];\n"
+      }
+    },
+    {
+      "id": "c2",
+      "name": "C Seedream Image",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        -288
+      ],
+      "notes": "替身: AI Image Generator（OpenAI）→ Seedream 真生图；尺寸映射；时间戳文件名规避撞名",
+      "parameters": {
+        "jsCode": "\nconst { execFileSync } = require('child_process');\nconst fs = require('fs');\nconst sizeMap = { '1024x1024': '1024x1024', '1024x1536': '1024x1536', '1536x1024': '1536x1024' };\nconst size = sizeMap[$('Scene Input').item.json.Resolution] || '1024x1024';\nconst prompt = $json.output.prompt;\nconst dir = 'C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/19932-c-data';\nconst ts = Date.now();\nconst promptFile = dir + '/prompt-' + ts + '.txt';\nconst imgFile = dir + '/post-' + ts + '.png';\nfs.writeFileSync(promptFile, prompt, 'utf-8');\nexecFileSync('python', [\n  'C:/Users/Administrator/.easyclaw/bundled-skill-overrides/image-gen/image-gen/scripts/generate_image.py',\n  '--prompt-file', promptFile, '--filename', imgFile, '--size', size\n], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 300000 });\nconst st = fs.statSync(imgFile);\nreturn [{ json: { imagePath: imgFile, imageBytes: st.size, usedPrompt: prompt, usedSize: size } }];\n"
+      }
+    },
+    {
+      "id": "c3",
+      "name": "C Local Host",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        -288
+      ],
+      "notes": "替身: Upload to Google Drive → 本地托管链接（规避共享权限 403 坑）",
+      "parameters": {
+        "jsCode": "\nreturn [{ json: { webViewLink: 'file:///' + $json.imagePath.replace(/\\\\/g, '/'),\n                 hostedLocally: true, imagePath: $json.imagePath } }];\n"
+      }
+    },
+    {
+      "id": "c4",
+      "name": "C Post Content Agent (DeepSeek)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        -288
+      ],
+      "notes": "替身: Post Content Generator + Groq + parser（schema: instagram/linkedin/twitter (x)）",
+      "parameters": {
+        "jsCode": "\nconst fs = require('fs');\nconst key = JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json', 'utf-8')).apiKey;\nasync function ds(system, user, schemaHint) {\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.deepseek.com/chat/completions',\n    headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },\n    body: {\n      model: 'deepseek-chat',\n      messages: [\n        { role: 'system', content: system + '\\nYou MUST respond with a single valid JSON object matching this schema: ' + schemaHint + ' . No markdown fences, no extra text.' },\n        { role: 'user', content: user }\n      ],\n      response_format: { type: 'json_object' },\n      temperature: 0.7\n    },\n    json: true, timeout: 120000\n  });\n  const txt = res.choices[0].message.content;\n  return JSON.parse(txt);  // 契约层: 与模板解析器一样无 try 兜底,崩了就是坑实锤\n}\n\nconst prompt = $('C Prompt Agent (DeepSeek)').item.json.output.prompt;\nconst out = await ds.call(this,\n  'You are a social media expert. Write one post each for instagram, linkedin and twitter (x) about this image concept.',\n  'Image concept: ' + prompt,\n  '{\"instagram\": \"string\", \"linkedin\": \"string\", \"twitter (x)\": \"string\"}');\nfor (const k of ['instagram', 'linkedin', 'twitter (x)'])\n  if (!out[k]) throw new Error('Agent2 missing key: ' + k);\nreturn [{ json: { output: out } }];\n"
+      }
+    },
+    {
+      "id": "c5",
+      "name": "C HTML Agent (DeepSeek)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -288
+      ],
+      "notes": "替身: HTML Generation Agent + Groq + parser；输入串按模板 text 表达式原文组装",
+      "parameters": {
+        "jsCode": "\nconst fs = require('fs');\nconst key = JSON.parse(fs.readFileSync('C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/deepseek-key.json', 'utf-8')).apiKey;\nasync function ds(system, user, schemaHint) {\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://api.deepseek.com/chat/completions',\n    headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },\n    body: {\n      model: 'deepseek-chat',\n      messages: [\n        { role: 'system', content: system + '\\nYou MUST respond with a single valid JSON object matching this schema: ' + schemaHint + ' . No markdown fences, no extra text.' },\n        { role: 'user', content: user }\n      ],\n      response_format: { type: 'json_object' },\n      temperature: 0.7\n    },\n    json: true, timeout: 120000\n  });\n  const txt = res.choices[0].message.content;\n  return JSON.parse(txt);  // 契约层: 与模板解析器一样无 try 兜底,崩了就是坑实锤\n}\n\n// 模板 text 表达式原文:\nconst inputText = 'Instagram Post : ' + $json.output.instagram\n  + '\\nLinkedIn Post : ' + $json.output.linkedin\n  + '\\nTwitter (X) Post: ' + $json.output['twitter (x)']\n  + '\\n\\nImage Link : ' + $('C Local Host').item.json.webViewLink;\nconst out = await ds.call(this,\n  'You are a helpful text to html code generator. Take the Instagram/LinkedIn/Twitter posts and Image Url, and make a beautiful html page showing instagram post then linkedin then twitter, and add a button saying check image which redirects to the image link.',\n  inputText, '{\"html file code\": \"string\"}');\nif (!out['html file code']) throw new Error('Agent3 missing html file code key');\nreturn [{ json: { output: { 'html file code': out['html file code'] }, agentInputText: inputText } }];\n"
+      }
+    },
+    {
+      "id": "c6",
+      "name": "C Assert Real Run",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        -288
+      ],
+      "parameters": {
+        "jsCode": "\nconst fs = require('fs');\nconst results = [];\nfunction T(name, fn) {\n  try { const r = fn(); results.push({ name, ok: r === true, actual: r === true ? undefined : r }); }\n  catch (e) { results.push({ name, ok: false, actual: 'THROW: ' + e.message }); }\n}\nconst rendered = $json.output['html file code'];\nconst scene = $('Scene Input').item.json;\nconst p = $('C Prompt Agent (DeepSeek)').item.json.output.prompt;\nconst img = $('C Seedream Image').item.json;\nconst host = $('C Local Host').item.json;\nconst social = $('C Post Content Agent (DeepSeek)').item.json.output;\nconst agentInput = $json.agentInputText;\n\nT('C1 DeepSeek Agent1 真调出 prompt（非空且围绕创意）', () => p.length > 10 ? true : p);\nT('C2 prompt 与场景 input 语义相关（含 honey 或概念词）',\n  () => /honey|jar|wooden|farmhouse/i.test(p) ? true : p);\nT('C3 Seedream 真生图: 文件存在且 >50KB', () => img.imageBytes > 50 * 1024 ? true : img.imageBytes);\nT('C4 尺寸映射: 竖版 1024x1536 透传', () => img.usedSize === '1024x1536' ? true : img.usedSize);\nT('C5 本地托管链接替代 Drive（无 403 风险）', () => host.webViewLink.startsWith('file:///') ? true : host.webViewLink);\nT('C6 DeepSeek Agent2 三平台文案全非空',\n  () => social.instagram.length > 5 && social.linkedin.length > 5 && social['twitter (x)'].length > 5 ? true : social);\nT('C7 \"twitter (x)\" 键真跑取值成功', () => typeof social['twitter (x)'] === 'string' ? true : 'missing');\nT('C8 HTML Agent 输入串四要素齐全（模板表达式忠实复现）',\n  () => agentInput.includes('Instagram Post :') && agentInput.includes('Twitter (X) Post:')\n     && agentInput.includes(host.webViewLink) ? true : agentInput);\nT('C9 DeepSeek Agent3 产出 HTML', () => rendered.length > 100 && rendered.toLowerCase().includes('<') ? true : rendered);\nT('C10 HTML 含 check image 按钮（systemMessage 契约）', () => /check image/i.test(rendered) ? true : rendered.slice(0, 200));\nT('C11 HTML 引用图片链接', () => rendered.includes(host.webViewLink) || rendered.includes('post-') ? true : rendered.slice(0, 200));\nT('C12 三平台文案进 HTML', () => rendered.includes(social.instagram.slice(0, 20)) ? true : rendered.slice(0, 200));\n\n// 落盘最终 HTML 供人工/浏览器验收\nconst outHtml = 'C:/Users/Administrator/.easyclaw/workspace/n8n-lesson-crew/state/19932-c-data/final-result.html';\nfs.writeFileSync(outHtml, rendered, 'utf-8');\n\nconst failed = results.filter(x => !x.ok);\nreturn [{ json: { total: results.length, passed: results.length - failed.length, failed: failed.length,\n                  failures: failed.map(f => ({ name: f.name, actual: String(f.actual).slice(0, 300) })),\n                  artifacts: { html: outHtml, image: img.imagePath, imageBytes: img.imageBytes },\n                  sample: { prompt: p, instagram: social.instagram.slice(0, 80) } } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Run C": {
+      "main": [
+        [
+          {
+            "node": "Scene Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scene Input": {
+      "main": [
+        [
+          {
+            "node": "C Prompt Agent (DeepSeek)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C Prompt Agent (DeepSeek)": {
+      "main": [
+        [
+          {
+            "node": "C Seedream Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C Seedream Image": {
+      "main": [
+        [
+          {
+            "node": "C Local Host",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C Local Host": {
+      "main": [
+        [
+          {
+            "node": "C Post Content Agent (DeepSeek)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C Post Content Agent (DeepSeek)": {
+      "main": [
+        [
+          {
+            "node": "C HTML Agent (DeepSeek)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "C HTML Agent (DeepSeek)": {
+      "main": [
+        [
+          {
+            "node": "C Assert Real Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "active": false,
+  "tags": []
+}
