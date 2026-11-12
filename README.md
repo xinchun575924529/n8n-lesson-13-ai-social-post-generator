@@ -34,3 +34,11 @@
   → AI Agent2 写 Instagram / LinkedIn / X 三条文案
   → AI Agent3 把文案+图链接渲染成精美 HTML 结果页
 ```
+
+---
+
+## 🛠️ 远程部署服务 ¥99
+
+不想自己折腾环境？工程师 ToDesk/向日葵 远程帮你把本课工作流装好调通（单课 × 1 次，≤60 分钟）。
+
+👉 [立即购买部署服务](https://n8nbox.cn/cashier?item=svc-remote-deploy-01)
